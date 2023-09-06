@@ -1,0 +1,174 @@
+---
+r---
+title: "Worksheet1Part2"
+author: "Akshay Anand"
+date: "2023-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Data Analysis**
+
+# **Worksheet 1 Part 2**
+
+### Akshay Anand
+
+### PES1UG21CS064
+
+## Problems
+
+### Problem 1
+
+Find the total number of accidents in each state for the year 2016 and display your results. Make sure to display all rows while printing the dataframe. Print only the necessary columns. (Hint: use the grep command to help filter out column names).
+
+```{r}
+data = read.csv("road_accidents_india_2016.csv")
+
+#Using grep to get the necessary columns
+req_cols <- grep("Total.Accidents$",colnames(data),ignore.case = T,value=TRUE)
+
+#Getting total count
+total_accidents <- data.frame(state..ut=data$State..UT,total_count=rowSums(data[,c(req_cols)],na.rm = TRUE))
+print.data.frame(total_accidents)
+
+
+
+```
+
+### Problem 2
+
+Find the (fatality rate = total number of deaths / total number of accidents ) in each state. Find out if there is a significant linear correlation at a significance of α = 0.05 between the fatality rate of a state and the mist/foggy rate (fraction of total accidents that happen in mist/foggy conditions).
+
+Plot the fatality rate against the mist/foggy rate. (Hint: use the ggscatter library to plot a scatterplot with the confidence interval of the correlation coefficient). Plot the fatality rate and mist/foggy rate (see this and this for R plot customization).
+
+```{r}
+#Calculate the fatality rate as
+
+data$total_accidents <- (data$Fine.Clear...Total.Accidents + data$Mist..Foggy...Total.Accidents + data$Cloudy...Total.Accidents + data$Rainy...Total.Accidents + data$Snowfall...Total.Accidents + data$Hail.Sleet...Total.Accidents + data$Dust.Storm...Total.Accidents + data$Others...Total.Accidents)
+
+data$total_fatality <- (data$Fine.Clear...Persons.Killed + data$Mist..Foggy...Persons.Killed + data$Cloudy...Persons.Killed + data$Rainy...Persons.Killed + data$Snowfall...Persons.Killed + data$Hail.Sleet...Persons.Killed + data$Dust.Storm...Persons.Killed + data$Others...Persons.Killed)
+
+
+data$fatality_rate =  data$total_fatality/ data$total_accidents 
+
+#Calculate mistrate
+
+data$mist_rate <- data$Mist..Foggy...Total.Accidents / data$total_accidents
+  
+#To calculate Pearsons correlation coefficient
+
+correlation <- cor(data$fatality_rate,data$mist_rate,method = "pearson")
+print(correlation)
+
+#To check the hypothesis result
+
+hypothesis_test <- cor.test(data$fatality_rate,data$mist_rate,method = "pearson")
+print(hypothesis_test)
+
+#As the p value is 0.08, which is greater than alpha ( 0.05), we can reject the null hypothesis that true correlation is equal to 0
+
+#Plotting the scatter plot
+
+plot(x = data$fatality_rate,y=data$mist_rate,col="red",pch=20)
+```
+
+### Problem 3
+
+Rank the states based on total accidents and total fatalities (give a rank of 1 to the state that has the highest value of a property). You are free to use any tie-breaking method for assigning ranks. Find the Spearman-Rank correlation coefficient between the two rank columns and determine if there is any statistical significance at a significance level of α = 0.05. Also test the hypothesis that the correlation coefficient is at least 0.2.
+
+```{r}
+#Getting the rank
+
+data$rank_accidents <- rank(-data$total_accidents,ties.method = "min")
+data$rank_fatality <- rank(-data$total_fatality,ties.method = "min")
+
+#Calculating the correlation
+
+correlation <- cor(data$rank_accidents,data$rank_fatality,method = "spearman")
+cat("The value of correlation coefficient is : ",correlation,"\n")
+
+number <- nrow(data)
+t_statistic <- (correlation * sqrt((number - 2)/(1 - correlation^2)))
+p_value <- 2 * pt(q = t_statistic,df = number - 2,lower.tail = FALSE)
+cat("The p_value is ",p_value,"\n")
+
+#For correlation atleast .2 
+
+t_statistic2 <- (correlation - .2) * (sqrt((number-2)/(1 - correlation^2)))
+p_value2 <- pt(q=t_statistic2, df= number - 2, lower.tail = FALSE)
+cat("The p_value is ",p_value2,"\n")
+
+#As the p value is much lesser than 0.05, we can assume that there is a correlation between the two ranks and that the correlation is atleast greater than 0.2
+```
+
+### Problem 4
+
+Convert the column Hail.Sleet. . . Total.Accidents to a binary column as follows. If a hail/sleet accident has occurred in a state, give that state a value of 1. Otherwise, give it a value of 0. Once converted, find out if there is a significant correlation between the hail_accident_occur binary column created and the number of rainy total accidents for every state. Calculate the point bi-serial correlation coefficient between the two columns. (Hint: it is equivalent to calculating the Pearson correlation between a continuous and a dichotomous variable. You could also use the ltm package's biserial.cor function).
+
+```{r}
+#Use ltm package
+library("ltm")
+
+#To create the binary column
+
+data$hail_binary <- ifelse(data$Hail.Sleet...Total.Accidents >0 ,1 ,0)
+
+#Calculate point biserial correlation
+
+correlation <- biserial.cor(data$Rainy...Total.Accidents,data$hail_binary)
+cat("The point biserial correlation coefficient is : ",correlation)
+
+#As the point biserial correlational coefficient is small in magnitude, the binary column of hail accident occuring does not have a significant relation with total number of accidents in rainy whether.
+
+```
+
+### Problem 5
+
+Similar to in Problem 4, create a binary column to represent whether a dust storm accident has occurred in a state (1 = occurred, 0 = not occurred). Convert the two columns into a contingency table. Calculate the phi coefficient of the two tables. (Hint: use the psych package).
+
+```{r}
+#Importing the libraries
+library("psych")
+
+#Creating the binary column
+data$dust_occurred <- ifelse(data$Dust.Storm...Total.Accidents > 0, 1, 0)
+
+#Creating a contingency table
+contingency_table <- table(data$dust_occurred,data$hail_binary)
+print(contingency_table)
+
+#Calculating phi
+
+phi <- phi(contingency_table)
+cat("\n\nThe phi coefficient is : ",phi)
+```
+
+### Problem 6
+
+Read about correlation on this website and analyze the effect of sample size on correlation coefficients and spurious correlation. Are correlation coefficients affected by outliers ?
+
+```{r}
+#Spurious correlations are those correlations between values which are not related but still show some correlation due to randomness or a third confounding variable.
+
+#When we increase the sample size of the data, the spurious correlations reduce. This is because while the sample size is small, the chosen samples could resemble and give a high correlation due to chance.
+
+#However, when the sample size is large, it gives a more accurate representation of the population and ensures that random chance and sampling error does not affect correlation, thereby reducing spurious correlations.
+
+#Correlation coefficients are affected by outliers. In the case of Pearson's correlation coefficients, the outliers affect the value of covariance, decreasing or increasing the coefficient.
+```
+
+### Problem 7
+
+Look at these plots and answer: What problems do they have? How do they affect correlation analysis?
+
+```{r}
+
+#In the first case of graphs, correlation does not imply causation is clearly visible. As seen in the case of iphone stairs and deaths by stairs, although there is a strong correlation, the two variables are not actually related. The other two graphs also imply strong negative and positive correlation respectively, but are not actually dependant on each other.
+
+#In the second case of graph,
+
+#In the third case of graph, it is seen that the variables of customers below 40 and above 40 are related. However, this relation is not linear in nature. This means that the correlational analysis will not be able to capture this information.
+```

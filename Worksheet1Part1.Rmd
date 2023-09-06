@@ -1,0 +1,207 @@
+---
+title: "Worksheet1Part1"
+author: "Akshay Anand"
+date: "2023-08-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Data Analysis**
+
+# **Worksheet 1 Part 1**
+
+### Akshay Anand
+
+### PES1UG21CS064
+
+## Problems
+
+### Problem 1
+
+Get the summary statistics (mean, median, min, max, 1st quartile, 3rd quartile and standard deviation). Calculate these only for the numerical columns. What can you determine from the summary statistics? What summary statistics can be useful for categorical columns? Classify all the variables/columns into their types of data attributes (nominal, ordinal, interval, ratio).
+
+```{r}
+data = read.csv("movie_dataset.csv",header = TRUE)
+
+numeric_column = c("budget","popularity","revenue","runtime","vote_count","vote_average")
+summary_stat <- summary(data[,numeric_column])
+summary_stat
+
+#We can determine the outliers present in the data
+#We can also find the range and the spread of the data.
+#We can also check the skew of the data
+
+#Mode/Frequency can be used for categorical columns
+
+#The summary statistics can be classified as
+#Nominal <- Genre, ID, Original Language, Title, Director
+#Ordinal <-
+#Interval <- Release Date 
+#Ratio <- Budget, Popularity, Revenue, Runtime, Vote_average, Vote_count
+```
+
+### Problem 2
+
+Investigate the data set for missing values. Also classify the missingness as MCAR, MAR or MNAR. Recommend ways to replace missing values in the dataset and apply them for revenue, budget and runtime columns.
+
+*Hint:* Make sure to capture data from both, missing values in numeric fields and empty strings in descriptive fields. Convert all missing placeholders to type NA. Look at the distribution of the dataset to classify the type of missing values.
+
+```{r}
+#There are several values missing. The missing data values can be seen as a lot of numeric columns have 0 or very low values or blank values.
+#There are many columns with empty strings.
+#There are also many NA values.
+
+
+#We can replace the missing values with NA to get a better understanding
+
+#For budget we replace anything below a 1000 as missing as this does not make sense with the high revenue they generate.
+data$budget <- ifelse(data$budget < 1000, NA , data$budget)
+data$genres <- ifelse(data$genres == "", NA, data$genres)
+#For revenue also we can assume anything below 1000 is missing data
+data$revenue <- ifelse(data$revenue < 1000, NA , data$revenue)
+data$runtime <- ifelse(data$runtime == 0, NA , data$runtime) #There is no restriction on how small runtime can be
+data$vote_average <- ifelse(data$runtime == 0, NA , data$vote_average)
+data$vote_count <- ifelse(data$runtime == 0, NA , data$vote_count)
+data$director <- ifelse(data$director == "", NA, data$director)
+data$release_date <- ifelse(data$release_date == "", NA, data$release_date)
+
+#The missing values of director and genres are missing completely at random MCAR.
+#The values of budget, revenue and vote_average, vote_count are missing at random MAR.
+#This is because missing budget generally implies missing revenue. The same is also seen in vote_avg and vote_count.
+
+#We can replace budget, revenue and runtime columns with the median data of the column. This is because the median of the dataset is immune to skewness.
+
+runtime_median <- median(data$runtime,na.rm=TRUE)
+data$runtime <- ifelse(is.na(data$runtime),runtime_median,data$runtime)
+
+budget_median <- median(data$budget,na.rm=TRUE)
+data$budget <- ifelse(is.na(data$budget),budget_median,data$budget)
+
+revenue_median <- median(data$revenue,na.rm=TRUE)
+data$revenue <- ifelse(is.na(data$revenue),revenue_median,data$revenue)
+```
+
+### Problem 3
+
+Analyze the spread of the data set along years. How number of movie releases have changed over the years ?
+
+```{r}
+#To check the spread of the data we can use a box plot on the numerical values.
+
+library(ggplot2)
+
+numerical_data = data[,numeric_column]
+reshaped_data = stack(numerical_data)
+box_plot = ggplot(reshaped_data,aes(x=ind,y=values)) +  geom_boxplot() + labs(x = "Indices",y = "Values", title= "Box Plot of Numerical Values") + theme_minimal() + facet_wrap(~ind,scales="free",nrow=1)
+
+print(plot)
+
+#To check the number of movies across the number of years
+
+#Get the unique list of years in the dataset
+data$release_date <-as.Date(data$release_date, format = "%d-%m-%Y")
+data$release_year <- format(data$release_date,"%Y")
+data <- data[!is.na(data$release_year),]
+list_years <- unique(data$release_year)
+
+dist <- data.frame(year = list_years, count = numeric(length(list_years)))
+
+for( i in 1:length(list_years)){
+  
+  year <- list_years[i]
+  movies_in_year <- subset(data, release_year == year)
+  movie_count <- nrow(movies_in_year)
+  dist$count[i] <- movie_count
+}
+
+spread <- seq(1900,2020,10)
+plot2 <- ggplot(dist, aes(x = factor(year), y = count)) + geom_bar(stat="identity",fill="lightblue") + labs(x = "Years", y = "Number of years", title= "Distribution of no of movies across the years.")  + theme_minimal() + scale_x_discrete(breaks = spread, labels=as.character(spread))
+
+print(plot2)
+```
+
+### Problem 4
+
+Create a horizontal box plot using the column "runtime". What inferences can you make from this box and whisker plot? Comment on the skew of the runtime field (visual inspection is enough).
+
+```{r}
+plot <- ggplot(data, aes(x = runtime,y = "Runtime")) + geom_boxplot() + labs(title = "Horizontal box plot for runtime",x="Runtime",y = "") + theme_minimal()
+
+print(plot)
+
+#We can see that the distribution of the runtime is around 100 minutes. There are a lot of outliers, although the majority of the values are centred around 100 to 120 minutes.
+
+#The data is skewed more to the higher values ( left skewed data )rm()
+```
+
+### Problem 5
+
+Analyze the top 20 titles with highest budget, revenue and ROI. Plot a horizontal bar graph for all three metrics in each case. What analysis can you make by looking at these graphs? What kind of movies attracts the highest investments and do they promise a better ROI ?
+
+```{r}
+
+#Calculating ROI
+data$ROI = (data$revenue - data$budget)/data$budget * 100
+
+top_budget <- head(data[order(data$budget,decreasing = TRUE),],20)
+top_revenue <- head(data[order(data$revenue,decreasing = TRUE),],20)
+top_ROI <- head(data[order(data$ROI,decreasing = TRUE),],20)
+
+plot1 <- ggplot(top_budget,aes(x=budget,y=reorder(title,budget))) + geom_bar(stat="identity",fill="blue") + labs(title="Top 20 movies by budget",x="Budget",y="Movies Title")
+
+plot2 <- ggplot(top_revenue,aes(x=revenue,y=reorder(title,revenue))) + geom_bar(stat="identity",fill="red") + labs(title="Top 20 movies by Revenue",x="Revenue",y="Movies Title")
+
+plot3 <- ggplot(top_ROI,aes(x=ROI,y=reorder(title,ROI))) + geom_bar(stat="identity",fill="green") + labs(title="Top 20 movies by ROI",x="ROI",y="Movies Title")
+
+print(plot1)
+print(plot2)
+print(plot3)
+
+#The movies which are backed by big companies are the ones which have the highest budget.
+#The movies which are superhero based or animated movies for kids are the ones that have the best revenue
+#There are a lot of outliers for ROI calculation.They could be due to movies with low budgets or incorrect or missing values for budget and revenue.
+
+```
+
+### Problem 6
+
+Put yourself in the shoes of a production house. You want to produce the next big blockbuster. Plot the ROI, revenue and budget across genres to finalize the genre of your upcoming movie as you did in the previous problem. Elaborate your answers with proper explanation. Since one movie can fall in multiple genre categories, you are free to choose a combination. You can also understand how the popularity of different genres have changed along the years. Do provide a nice name to your movie and your dream cast ;)
+
+```{r}
+#Plotting based on genres
+
+genre_group <- c("Action","Adventure","Comedy","Drama","Romance","Mystery","Thriller","Science-Fiction","Mystery","Horror","Crime","Animation","Fantasy")
+
+assign_group <- function(genres){
+  for(genre in genres){
+    if(!is.na(genre)){
+      for(value in genre_group){
+        if(genre == value){
+          return(value)
+      }
+    } 
+    }
+  }
+  return("Other")
+}
+
+data$genre_group <- sapply(strsplit(data$genres," "),assign_group)
+
+roi_genre <- ggplot(data, aes(x = genre_group, y = ROI)) + geom_boxplot(outlier.shape = NA) + labs(x = "Genre Group", y = "ROI", title = "ROI Variation by Genre Group") + theme_minimal()  + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(limits = c(0,1000))
+
+budget_genre <- ggplot(data, aes(x = genre_group, y = budget)) + geom_boxplot(outlier.shape = NA) + labs(x = "Genre Group", y = "Budget", title = "Budget Variation by Genre Group") + theme_minimal()  + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(limits = c(0,2.5e08))
+
+revenue_genre <- ggplot(data, aes(x = genre_group, y = revenue)) + geom_boxplot(outlier.shape = NA) + labs(x = "Genre Group", y = "Revenue", title = "Revenue Variation by Genre Group") + theme_minimal() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  scale_y_continuous(limits = c(0,1.5e09))
+
+print(budget_genre)
+print(revenue_genre)
+print(roi_genre)
+
+#We can see that the most revenue generating genres are adventure, fantasy,  scifi and animation.
+
+
+# For the new movie we could create a movie called "HyperDrive" which is an animated movie starring a cowboy set exploring space (scifi and adventure) voiced by esteemed actor Jack Black.
+```

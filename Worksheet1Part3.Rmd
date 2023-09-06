@@ -1,0 +1,112 @@
+---
+title: "Worksheet1Part3"
+author: "Akshay Anand"
+date: "2023-09-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **Data Analysis**
+
+# **Worksheet 1 Part 3**
+
+### Akshay Anand
+
+### PES1UG21CS064
+
+## Problems
+
+### Problem 1
+
+Read the data set and display the box plot for each of the fitness plans A, B, C, D. Analyze the box plot for outliers.
+
+```{r}
+library(ggplot2)
+
+data1 = read.csv("students.csv")
+
+plot_a <- ggplot(data1,aes(y=A)) + geom_boxplot(fill="blue",color="black") + labs(title="Box plot for Fitness Plan A")
+
+plot_b <- ggplot(data1,aes(y=B)) + geom_boxplot(fill="red",color="black") + labs(title="Box plot for Fitness Plan B")
+
+plot_c <- ggplot(data1,aes(y=C)) + geom_boxplot(fill="green",color="black") + labs(title="Box plot for Fitness Plan C")
+
+plot_d <- ggplot(data1,aes(y=D)) + geom_boxplot(fill="purple",color="black") + labs(title="Box plot for Fitness Plan D")
+
+print(plot_a)
+print(plot_b)
+print(plot_c)
+print(plot_d)
+```
+
+### Problem 2
+
+Is the data symmetrical or skewed for each group? Verify the normality assumption for ANOVA. (Hint: Find the Pearson's moment coefficient of skewness and justify it with probability distribution function plot or you can also plot the Q-Q plot)
+
+```{r}
+library("e1071")
+
+#Pearson's moment coefficient of skewness
+
+skewness_a <- skewness(data1$A)
+skewness_b <- skewness(data1$B)
+skewness_c <- skewness(data1$C)
+skewness_d <- skewness(data1$D)
+
+cat("The skewness for the classes are : ",skewness_a,skewness_b,skewness_c,skewness_d)
+
+#As the skewness is centred around zero and have small magnitude, the data given is symmetric and follows normal distribution. There is a slight skew in fitness plan A.
+
+#Plotting pdf for all plans
+
+plot_a <- ggplot(data1,aes(x=A)) + geom_density(fill="blue",color="black") + labs(title="PDF for Fitness Plan A")
+
+plot_b <- ggplot(data1,aes(x=B)) + geom_density(fill="red",color="black") + labs(title="PDF for Fitness Plan B")
+
+plot_c <- ggplot(data1,aes(x=C)) + geom_density(fill="green",color="black") + labs(title="PDF for Fitness Plan C")
+
+plot_d <- ggplot(data1,aes(x=D)) + geom_density(fill="purple",color="black") + labs(title="PDF for Fitness Plan D")
+
+print(plot_a)
+print(plot_b)
+print(plot_c)
+print(plot_d)
+
+#As the following data follows normal distribution, we can apply ANOVA for this scenario.
+```
+
+### Problem 3
+
+Is there any evidence to suggest a difference in the average marks obtained by students under different fitness plans? Explain what test are you using and why ? Define the hypothesis and the steps of testing. What does the output of this test signify ? (Note: Assume the significance level to be 0.05 )
+
+```{r}
+
+alpha <- 0.05
+
+#We can use ANOVA to check whether average marks differs under different fitness plans. ANOVA test is used in this case as we can compare the mean value of different classes without multiple p statistic or t statistic tests.
+
+#The null hypothesis, H0: Avg marks(A) = Avg marks(B) = Avg Marks(C) = Avg Marks(D)
+#The alternate hypothesis, Ha: The average marks of different fitness plans are not equal.
+
+#
+
+```
+
+### Problem 4
+
+Which specific task exhibits the lowest average training time? Does the combination of different treats and tasks significantly influence the training time for pets?
+
+```{r}
+
+```
+
+### Problem 5
+
+Does the choice of treats significantly impact the training time for different tasks? Which specific combinations of treats and tasks lead to the most significant differences in training time? (Note: Assume the significance level to be 0.05 )
+
+```{r}
+
+```
